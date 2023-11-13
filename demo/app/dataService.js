@@ -92,6 +92,8 @@ export const handleErrorLogging = async (error, info, location) => {
   console.log("in handleErrorLogging",error.toString(), info, location);
   const locationObj = await getReverseGeoCode(location);
   console.log(locationObj);
+  const temp = await Device.getUptimeAsync();
+  console.log(temp);
   const newErrorEntityToDB = {
     time: Date.now(),
     errorTitle: error.toString(),
@@ -106,6 +108,22 @@ export const handleErrorLogging = async (error, info, location) => {
     // cpuArchitectures: Device.supportedCpuArchitectures,
     // totalMemory: Device.totalMemory,
   };
+  console.log(
+    {
+      time: Date.now(),
+      // errorTitle: error.toString(),
+      // errorDescription: JSON.stringify(info),
+      brand: Device.brand,
+      deviceName: Device.deviceName,
+      isDevice: Device.isDevice,
+      manufacturer: Device.manufacturer,
+      modelName: Device.modelName,
+      buildId: Device.osBuildId,
+      internalBuildId: Device.osInternalBuildId,
+      cpuArchitectures: Device.supportedCpuArchitectures,
+      totalMemory: Device.totalMemory,
+    }
+  )
   axios
     .post("https://yucca-interface.vercel.app/logerror", {
       errorTitle: newErrorEntityToDB.errorTitle,

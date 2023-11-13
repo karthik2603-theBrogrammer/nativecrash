@@ -28,7 +28,6 @@ con.connect(function (err) {
   `)
   con.query(`
     CREATE TABLE IF NOT EXISTS surface_level_info (
-      id INT AUTO_INCREMENT PRIMARY KEY,
       build_id VARCHAR(255) NOT NULL,
       brand VARCHAR(255) NOT NULL,
       device_name VARCHAR(255) NOT NULL,
@@ -47,7 +46,6 @@ con.connect(function (err) {
   // Location Table
   con.query(`
     CREATE TABLE IF NOT EXISTS location (
-      id INT AUTO_INCREMENT PRIMARY KEY,
       crash_id INT NOT NULL,
       build_id VARCHAR(255) NOT NULL,
       coordinates VARCHAR(255) NOT NULL,
@@ -59,9 +57,9 @@ con.connect(function (err) {
   });
 
   // Number of Crashes Table
+  // This table is result of a trigger.
   con.query(`
     CREATE TABLE IF NOT EXISTS number_of_crashes (
-      id INT AUTO_INCREMENT PRIMARY KEY,
       device_unique_id VARCHAR(255) NOT NULL,
       num_of_crashes INT NOT NULL
     )
@@ -72,8 +70,7 @@ con.connect(function (err) {
 
   // Detailed Information Table
   con.query(`
-    CREATE TABLE IF NOT EXISTS detailed_information (
-      id INT AUTO_INCREMENT PRIMARY KEY,
+    CREATE TABLE IF NOT EXISTS device_detailed_information (
       build_id VARCHAR(255) NOT NULL,
       real_or_fake ENUM('real', 'fake') NOT NULL,
       internal_build_id VARCHAR(255) NOT NULL
@@ -85,8 +82,7 @@ con.connect(function (err) {
 
   // Crash Report Table
   con.query(`
-    CREATE TABLE IF NOT EXISTS crash_report (
-      id INT AUTO_INCREMENT PRIMARY KEY,
+    CREATE TABLE IF NOT EXISTS crash_info (
       crash_id INT NOT NULL,
       build_id VARCHAR(255) NOT NULL,
       error_title VARCHAR(255) NOT NULL,
@@ -99,6 +95,7 @@ con.connect(function (err) {
   });
 
 });
+
 
 app.get("/", (req, res) => {
   res.send("Hello World!");

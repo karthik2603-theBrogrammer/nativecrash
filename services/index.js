@@ -6,6 +6,7 @@ dotenv.config()
 const app = express();
 // Add the cors middleware
 app.use(cors());
+app.use(express.json())
 
 // Create connection to MySQL database
 var con = mysql.createConnection({
@@ -47,12 +48,13 @@ con.connect(function (err) {
   // Location Table
   con.query(`
     CREATE TABLE IF NOT EXISTS location (
-      build_id VARCHAR(255) PRIMARY KEY NOT NULL,
       crash_id VARCHAR(255) NOT NULL,
-      latittude VARCHAR(20) NOT NULL,
+      build_id VARCHAR(255) NOT NULL,
+      latitude VARCHAR(20) NOT NULL,
       longitude VARCHAR(20) NOT NULL,
       location VARCHAR(255) NOT NULL,
-      FOREIGN KEY (build_id) REFERENCES device_surface_info(build_id)
+      FOREIGN KEY (build_id) REFERENCES device_surface_info(build_id),
+      PRIMARY KEY (crash_id, build_id)
     )
   `, function (err, result) {
     if (err) throw err;
@@ -90,7 +92,7 @@ con.connect(function (err) {
     CREATE TABLE IF NOT EXISTS crash_info (
       build_id VARCHAR(255) PRIMARY KEY NOT NULL,
       crash_id INT NOT NULL,
-      error_title VARCHAR(255) NOT NULL,
+      error_title TEXT NOT NULL,
       error_description TEXT NOT NULL,
       time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (build_id) REFERENCES device_surface_info(build_id)
@@ -100,23 +102,41 @@ con.connect(function (err) {
     console.log("Crash Report table created or already exists");
   });
 });
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
 
-
-app.post('/', async (req, res) => {
+app.post('/v2/log-crash', async (req, res) => {
   try {
-    
+    const {
+      time,
+      errorTitle,
+      errorDescription,
+      brand,
+      deviceName,
+      isDevice,
+      manufacturer,
+      modelName,
+      buildId,
+      internalBuildId,
+      cpuArchitectures,
+      totalMemory,
+      deviceVersion,
+      locationData: { city, state, suburb },
+      coordinates: { latitude, longitude }
+    } = req.body;
+  
+    console.log(data)
+    res.status(200).send({})
   } catch (error) {
     res.status(500).send({})
   }
 })
 
 
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
+
 
 const port = 3000;
-
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });

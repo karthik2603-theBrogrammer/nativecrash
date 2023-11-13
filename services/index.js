@@ -117,7 +117,7 @@ con.connect(function (err) {
     internal_build_id VARCHAR(255) NOT NULL,
     cpu_architectures VARCHAR(255) NOT NULL,
     total_memory VARCHAR(255) NOT NULL,
-    device_version VARCHAR(255) NOT NULL,
+    bruh VARCHAR(255) NOT NULL,
     latitude VARCHAR(20) NOT NULL,
     longitude VARCHAR(20) NOT NULL,
     location_city VARCHAR(255) NOT NULL,
@@ -279,7 +279,7 @@ con.query(
 // FOR EACH ROW
 // BEGIN
 //   CALL InsertDeviceSurfaceInfo(
-//     NEW.build_id, NEW.brand, NEW.device_name, NEW.device_version,
+//     NEW.build_id, NEW.brand, NEW.device_name, NEW.bruh,
 //     NEW.manufacturer, NEW.model_name, NEW.build_id, NEW.internal_build_id,
 //     NEW.cpu_architectures, NEW.total_memory, NEW.time, NEW.time
 //   );
@@ -313,7 +313,7 @@ const triggerQuery = `
     FOR EACH ROW
     BEGIN
       CALL InsertDeviceSurfaceInfo(
-        NEW.build_id, NEW.brand, NEW.device_name, NEW.device_version,
+        NEW.build_id, NEW.brand, NEW.device_name, NEW.bruh,
         NEW.manufacturer, NEW.model_name, NEW.cpu_architectures, NEW.time, NEW.time
       );
 
@@ -347,7 +347,7 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-app.post('/v2/log-crash', async (req, res) => {
+app.post('/v2/log-crash', (req, res) => {
   try {
     const {
       time,
@@ -366,38 +366,39 @@ app.post('/v2/log-crash', async (req, res) => {
       locationData: { city, state, suburb },
       coordinates: { latitude, longitude }
     } = req.body;
-    
-    console.log(data)
-    res.status(200).send({})
+
+    console.log("post req recieved 💀", brand);
+
     con.query(
-      `INSERT INTO your_endpoint_table (
-        build_id, brand, device_name, device_version,
-        manufacturer, model_name, cpu_architectures, time, location_city,
-        location_state, location_suburb, latitude, longitude, is_device,
-        internal_build_id, real_or_fake, error_title, error_description
+      `INSERT INTO your_endpoint_data (
+        time, error_title, error_description, brand, device_name, is_device,
+        manufacturer, model_name, build_id, internal_build_id, cpu_architectures,
+        total_memory, bruh, latitude, longitude, location_city,
+        location_state, location_suburb
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
       )`,
       [
-        buildId, brand, deviceName, deviceVersion,
-        manufacturer, modelName, cpuArchitectures, time, city,
-        state, suburb, latitude, longitude, isDevice,
-        internalBuildId, 'real', errorTitle, errorDescription
+        time, errorTitle, errorDescription, brand, deviceName, isDevice,
+        manufacturer, modelName, buildId, internalBuildId, cpuArchitectures,
+        totalMemory, deviceVersion, latitude, longitude, city, state, suburb
       ],
       (err, results) => {
         if (err) {
           console.error("Error executing INSERT query:", err);
           res.status(500).send({});
         } else {
-          console.log("Data inserted into your_endpoint_table successfully");
-          res.status(200).send({});
+          console.log("Data inserted into your_endpoint_data table successfully");
+          res.status(200).send('inserted');
         }
       }
     );
   } catch (error) {
-    res.status(500).send({})
+    console.error("Error processing request:", error);
+    res.status(500).send('didnt work :/');
   }
-})
+});
+
 
 
 
@@ -406,3 +407,29 @@ const port = 3000;
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
+
+// {
+//   "time": "2023-11-15T12:30:00",
+//   "errorTitle": "Sample Error",
+//   "errorDescription": "This is a sample error description.",
+//   "brand": "SampleBrand",
+//   "deviceName": "SampleDevice",
+//   "isDevice": true,
+//   "manufacturer": "SampleManufacturer",
+//   "modelName": "SampleModel",
+//   "buildId": "SampleBuildID",
+//   "internalBuildId": "SampleInternalBuildID",
+//   "cpuArchitectures": "x86_64",
+//   "totalMemory": "8GB",
+//   "deviceVersion": "1.0",
+//   "locationData":{
+//   "city": "SampleCity",
+//   "state": "SampleState",
+//   "suburb": "SampleSuburb"
+//   },
+//   "coordinates":{
+//   "latitude": "40.7128",
+//   "longitude": "-74.0060"
+//   }
+// }

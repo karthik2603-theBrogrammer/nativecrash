@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "scheme": "acme",
+    "web": {
+      "bundler": "metro"
+    },
+    "name": "nativeCrash4DBMS",
+    "slug": "nativeCrash4DBMS",
+    "extra": {
+      "eas": {
+        "projectId": "22c8469a-8c30-41c5-8ff3-58460f642ab5"
+      }
+    },
+    "android": {
+      "package": "com.l_arry.nativeCrash4DBMS"
+    }
+  }
+}

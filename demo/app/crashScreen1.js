@@ -23,9 +23,7 @@ const CrashScreen1Content = () => {
           flex: 1,
 
           justifyContent: "center",
-
           alignItems: "center",
-
           flexDirection: "row",
         }}
       >
@@ -36,9 +34,7 @@ const CrashScreen1Content = () => {
           android_ripple={{ color: "silver" }}
           style={{
             paddingHorizontal: 20,
-
             paddingVertical: 6,
-
             backgroundColor: "silver",
           }}
         >

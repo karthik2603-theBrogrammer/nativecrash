@@ -370,19 +370,26 @@ app.post('/v2/log-crash', async (req, res) => {
     console.log(data)
     res.status(200).send({})
     con.query(
-      `CALL InsertYourEndpointData(
-        '${buildId}', '${brand}', '${deviceName}', '${deviceVersion}',
-        '${manufacturer}', '${modelName}', '${cpuArchitectures}', '${time}', '${time}',
-        '${city}', '${state}', '${suburb}', '${latitude}', '${longitude}', 1,
-        '${internalBuildId}', 'real', '${internalBuildId}',
-        '${buildId}', 1, '${errorTitle}', '${errorDescription}'
-      );`,
+      `INSERT INTO your_endpoint_table (
+        build_id, brand, device_name, device_version,
+        manufacturer, model_name, cpu_architectures, time, location_city,
+        location_state, location_suburb, latitude, longitude, is_device,
+        internal_build_id, real_or_fake, error_title, error_description
+      ) VALUES (
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+      )`,
+      [
+        buildId, brand, deviceName, deviceVersion,
+        manufacturer, modelName, cpuArchitectures, time, city,
+        state, suburb, latitude, longitude, isDevice,
+        internalBuildId, 'real', errorTitle, errorDescription
+      ],
       (err, results) => {
         if (err) {
-          console.error("Error executing stored procedure:", err);
+          console.error("Error executing INSERT query:", err);
           res.status(500).send({});
         } else {
-          console.log("Stored procedure executed successfully");
+          console.log("Data inserted into your_endpoint_table successfully");
           res.status(200).send({});
         }
       }

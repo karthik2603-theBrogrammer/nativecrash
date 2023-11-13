@@ -21,6 +21,12 @@ con.connect(function (err) {
 
   // Surface Level Info Table
   con.query(`
+  CREATE DATABASE IF NOT EXISTS nativecrash
+  `)
+  con.query(`
+  USE nativecrash
+  `)
+  con.query(`
     CREATE TABLE IF NOT EXISTS surface_level_info (
       id INT AUTO_INCREMENT PRIMARY KEY,
       build_id VARCHAR(255) NOT NULL,

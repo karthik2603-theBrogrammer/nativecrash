@@ -12,7 +12,7 @@ var con = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: process.env.PASSWORD,
-  database: "nativecrash" // Replace 'your_database_name' with your actual database name
+  // database: "nativecrash" // Replace 'your_database_name' with your actual database name
 });
 
 con.connect(function (err) {
@@ -27,29 +27,32 @@ con.connect(function (err) {
   USE nativecrash
   `)
   con.query(`
-    CREATE TABLE IF NOT EXISTS surface_level_info (
-      build_id VARCHAR(255) NOT NULL,
+    CREATE TABLE IF NOT EXISTS device_surface_info (
+      build_id VARCHAR(255) PRIMARY KEY,
       brand VARCHAR(255) NOT NULL,
       device_name VARCHAR(255) NOT NULL,
       device_type VARCHAR(255) NOT NULL,
       os_name VARCHAR(255) NOT NULL,
       os_version VARCHAR(255) NOT NULL,
-      supported_cpu_architectures VARCHAR(255) NOT NULL,
-      total_memory INT NOT NULL,
-      uptime BIGINT NOT NULL
+      total_memory VARCHAR(255) NOT NULL,
+      uptime VARCHAR(255) NOT NULL
     )
   `, function (err, result) {
     if (err) throw err;
     console.log("Surface Level Info table created or already exists");
   });
+// supported_cpu_architectures VARCHAR(255) NOT NULL,
+
 
   // Location Table
   con.query(`
     CREATE TABLE IF NOT EXISTS location (
-      crash_id INT NOT NULL,
-      build_id VARCHAR(255) NOT NULL,
-      coordinates VARCHAR(255) NOT NULL,
-      location VARCHAR(255) NOT NULL
+      build_id VARCHAR(255) PRIMARY KEY NOT NULL,
+      crash_id VARCHAR(255) NOT NULL,
+      latittude VARCHAR(20) NOT NULL,
+      longitude VARCHAR(20) NOT NULL,
+      location VARCHAR(255) NOT NULL,
+      FOREIGN KEY (build_id) REFERENCES device_surface_info(build_id)
     )
   `, function (err, result) {
     if (err) throw err;
@@ -60,8 +63,9 @@ con.connect(function (err) {
   // This table is result of a trigger.
   con.query(`
     CREATE TABLE IF NOT EXISTS number_of_crashes (
-      device_unique_id VARCHAR(255) NOT NULL,
-      num_of_crashes INT NOT NULL
+      build_id VARCHAR(255) PRIMARY KEY NOT NULL,
+      number_of_crashes INT NOT NULL,
+      FOREIGN KEY (build_id) REFERENCES device_surface_info(build_id)
     )
   `, function (err, result) {
     if (err) throw err;
@@ -71,9 +75,10 @@ con.connect(function (err) {
   // Detailed Information Table
   con.query(`
     CREATE TABLE IF NOT EXISTS device_detailed_information (
-      build_id VARCHAR(255) NOT NULL,
+      build_id VARCHAR(255) PRIMARY KEY NOT NULL,
       real_or_fake ENUM('real', 'fake') NOT NULL,
-      internal_build_id VARCHAR(255) NOT NULL
+      internal_build_id VARCHAR(255) NOT NULL,
+      FOREIGN KEY (build_id) REFERENCES device_surface_info(build_id)
     )
   `, function (err, result) {
     if (err) throw err;
@@ -83,18 +88,27 @@ con.connect(function (err) {
   // Crash Report Table
   con.query(`
     CREATE TABLE IF NOT EXISTS crash_info (
+      build_id VARCHAR(255) PRIMARY KEY NOT NULL,
       crash_id INT NOT NULL,
-      build_id VARCHAR(255) NOT NULL,
       error_title VARCHAR(255) NOT NULL,
       error_description TEXT NOT NULL,
-      time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (build_id) REFERENCES device_surface_info(build_id)
     )
   `, function (err, result) {
     if (err) throw err;
     console.log("Crash Report table created or already exists");
   });
-
 });
+
+
+app.post('/', async (req, res) => {
+  try {
+    
+  } catch (error) {
+    res.status(500).send({})
+  }
+})
 
 
 app.get("/", (req, res) => {

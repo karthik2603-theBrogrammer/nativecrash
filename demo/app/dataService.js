@@ -92,8 +92,8 @@ export const handleErrorLogging = async (error, info, location) => {
   console.log("in handleErrorLogging",error.toString(), info, location);
   const locationObj = await getReverseGeoCode(location);
   console.log(locationObj);
-  const temp = await Device.getUptimeAsync();
-  console.log(temp);
+  const uptime = await Device.getUptimeAsync();
+  // console.log("device uptime->",uptime);
   const newErrorEntityToDB = {
     time: Date.now(),
     errorTitle: error.toString(),
@@ -122,6 +122,11 @@ export const handleErrorLogging = async (error, info, location) => {
       internalBuildId: Device.osInternalBuildId,
       cpuArchitectures: Device.supportedCpuArchitectures,
       totalMemory: Device.totalMemory,
+      osName: Device.osName,
+      osVersion: Device.osVersion,
+      deviceUptime: uptime,
+      coordinates: {latitude: location.latitude, longitude: location.longitude},
+      locationData: {city : locationObj.city, state: locationObj.state, suburb: locationObj.suburb },
     }
   )
   axios

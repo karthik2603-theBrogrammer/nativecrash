@@ -72,9 +72,11 @@ con.connect(function (err) {
   con.query(
     `
     CREATE TABLE IF NOT EXISTS number_of_crashes (
-      build_id VARCHAR(255) PRIMARY KEY NOT NULL,
+      build_id VARCHAR(255) NOT NULL,
+      location VARCHAR(255) NOT NULL,
       number_of_crashes INT NOT NULL,
-      FOREIGN KEY (build_id) REFERENCES device_surface_info(build_id)
+      FOREIGN KEY (build_id) REFERENCES device_surface_info(build_id),
+      PRIMARY KEY (build_id, location)
     )
   `,
     function (err, result) {
@@ -86,7 +88,7 @@ con.connect(function (err) {
   // Detailed Information Table
   con.query(
     `
-    CREATE TABLE IF NOT EXISTS device_detailed_information (
+    CREATE TABLE IF NOT EXISTS device_detailed_info (
       build_id VARCHAR(255) PRIMARY KEY NOT NULL,
       is_device BOOL NOT NULL,
       internal_build_id VARCHAR(255) NOT NULL,
@@ -103,12 +105,10 @@ con.connect(function (err) {
   con.query(
     `
     CREATE TABLE IF NOT EXISTS crash_info (
-      build_id VARCHAR(255) PRIMARY KEY NOT NULL,
-      crash_id INT NOT NULL,
+      crash_id INT PRIMARY KEY,
       error_title TEXT NOT NULL,
       error_description TEXT NOT NULL,
-      time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (build_id) REFERENCES device_surface_info(build_id)
+      time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `,
     function (err, result) {
@@ -213,37 +213,15 @@ con.connect(function (err) {
     }
   );
 
-  // Procedure to Insert into number_of_crashes
+  // Procedure to Insert into device_detailed_info
   con.query(
-    `CREATE PROCEDURE IF NOT EXISTS InsertNumberOfCrashesInfo(
-    IN p_build_id VARCHAR(255),
-    IN p_number_of_crashes INT
-    )
-    BEGIN
-    INSERT INTO number_of_crashes (
-      build_id, number_of_crashes
-      )
-      VALUES (
-        p_build_id, p_number_of_crashes
-        )
-        ON DUPLICATE KEY UPDATE
-        number_of_crashes = number_of_crashes + p_number_of_crashes;
-        END;`,
-    (err, results) => {
-      if (err) throw err;
-      console.log("Procedure InsertNumberOfCrashesInfo created successfully");
-    }
-  );
-
-  // Procedure to Insert into device_detailed_information
-  con.query(
-    `CREATE PROCEDURE IF NOT EXISTS InsertDetailedInformation(
+    `CREATE PROCEDURE IF NOT EXISTS InsertDetailedInfo(
     IN p_build_id VARCHAR(255),
     IN p_is_device bool,
     IN p_internal_build_id VARCHAR(255)
     )
     BEGIN
-    INSERT INTO device_detailed_information (
+    INSERT INTO device_detailed_info (
       build_id, is_device, internal_build_id
       )
     VALUES (
@@ -255,14 +233,13 @@ con.connect(function (err) {
       END;`,
     (err, results) => {
       if (err) throw err;
-      console.log("Procedure InsertDetailedInformation created successfully");
+      console.log("Procedure InsertDetailedInfo created successfully");
     }
   );
 
   // Procedure to Insert into crash_info
   con.query(
     `CREATE PROCEDURE IF NOT EXISTS InsertCrashReport(
-    IN p_build_id VARCHAR(255),
     IN p_crash_id INT,
     IN p_error_title TEXT,
     IN p_error_description TEXT,
@@ -270,10 +247,10 @@ con.connect(function (err) {
     )
     BEGIN
     INSERT INTO crash_info (
-      build_id, crash_id, error_title, error_description, time
+      crash_id, error_title, error_description, time
     )
     VALUES (
-      p_build_id, p_crash_id, p_error_title, p_error_description, p_time
+      p_crash_id, p_error_title, p_error_description, p_time
       );
       END;`,
     (err, results) => {
@@ -281,6 +258,34 @@ con.connect(function (err) {
       console.log("Procedure InsertCrashReport created successfully");
     }
   );
+
+con.query(
+  `CREATE PROCEDURE IF NOT EXISTS UpdateNumberOfCrashes()
+  BEGIN
+    -- Delete existing data in number_of_crashes table
+    DELETE FROM number_of_crashes;
+    
+    -- Insert new counts into the number_of_crashes table
+    INSERT INTO number_of_crashes (build_id, location, number_of_crashes)
+    SELECT
+    l.build_id,
+    l.location,
+    COUNT(DISTINCT ci.crash_id) AS number_of_crashes
+    FROM
+        location l
+    JOIN
+        device_surface_info ds ON l.build_id = ds.build_id
+    LEFT JOIN
+        crash_info ci ON l.crash_id = ci.crash_id
+    GROUP BY
+        l.build_id, l.location;
+
+  END;`,
+  (err, results) => {
+    if (err) throw err;
+    console.log("Procedure UpdateNumberOfCrashes created successfully");
+  }
+);
 
 // trigger to handle procedure calls
   const triggerQuery = `
@@ -290,25 +295,24 @@ FOR EACH ROW
 BEGIN
 CALL InsertDeviceSurfaceInfo(
       NEW.build_id, NEW.brand, NEW.device_name, NEW.os_name, NEW.os_version, 
-      NEW.manufacturer, NEW.model_name, NEW.cpu_architectures, 
+      NEW.manufacturer, NEW.cpu_architectures, NEW.model_name, 
       NEW.total_memory, NEW.device_uptime
       );
       
       CALL InsertLocationInfo(
         NEW.id, NEW.build_id, NEW.latitude, NEW.longitude, NEW.location
         );
-        
-        CALL InsertNumberOfCrashesInfo(
-          NEW.build_id, 1
-          );
           
-          CALL InsertDetailedInformation(
+          CALL InsertDetailedInfo(
       NEW.build_id, NEW.is_device, NEW.internal_build_id
       );
       
       CALL InsertCrashReport(
-        NEW.build_id, NEW.id, NEW.error_title, NEW.error_description, NEW.time
+        NEW.id, NEW.error_title, NEW.error_description, NEW.time
       );
+      
+      CALL UpdateNumberOfCrashes();
+
       END;
       `;
 
@@ -396,7 +400,7 @@ app.listen(port, () => {
 
 ////////////////////sample req body
 // {
-//     "time": "2023-11-13T12:30:00",
+//   "time": "2023-11-13T12:00:20",
 //   "errorTitle": "Sample Error",
 //   "errorDescription": "This is a sample error description.",
 //   "brand": "SampleBrand",
@@ -404,7 +408,7 @@ app.listen(port, () => {
 //   "isDevice": true,
 //   "manufacturer": "SampleManufacturer",
 //   "modelName": "SampleModel",
-//   "buildId": "123456789",
+//   "buildId": "1234567890",
 //   "internalBuildId": "987654321",
 //   "cpuArchitectures": "x86_64",
 //   "totalMemory": "8GB",
@@ -412,14 +416,14 @@ app.listen(port, () => {
 //   "osVersion": "1.0.0",
 //   "deviceUptime": "4564564",
 //   "coordinates": {
-//       "latitude": "37.7749",
-//       "longitude": "-122.4194"
-//     },
-//     "locationData": {
-//         "city": "San Francisco",
-//         "state": "California",
-//         "suburb": "Sample Suburb"
-//       }
+//     "latitude": "37.7749",
+//     "longitude": "-122.4194"
+//   },
+//   "locationData": {
+//     "city": "San Francisco",
+//     "state": "California",
+//     "suburb": "Sample Suburb"
+//   }
 // }
 
 /////////////////////////////template for procedure
@@ -460,7 +464,7 @@ app.listen(port, () => {
 //       NEW.build_id, 1
 //     );
 
-//     CALL InsertDetailedInformation(
+//     CALL InsertDetailedInfo(
 //       NEW.build_id, NEW.is_device, NEW.internal_build_id
 //     );
 
@@ -474,3 +478,49 @@ app.listen(port, () => {
 //   if (err) throw err;
 //   console.log("Trigger InsertYourEndpointData created successfully");
 // });
+
+
+  //////////////////////////////////// Procedure to Insert into number_of_crashes
+  // con.query(
+  //   `CREATE PROCEDURE IF NOT EXISTS InsertNumberOfCrashesInfo(
+  //   IN p_build_id VARCHAR(255),
+  //   IN p_number_of_crashes INT
+  //   )
+  //   BEGIN
+  //   INSERT INTO number_of_crashes (
+  //     build_id, number_of_crashes
+  //     )
+  //     VALUES (
+  //       p_build_id, p_number_of_crashes
+  //       )
+  //       ON DUPLICATE KEY UPDATE
+  //       number_of_crashes = number_of_crashes + p_number_of_crashes;
+  //       END;`,
+  //   (err, results) => {
+  //     if (err) throw err;
+  //     console.log("Procedure InsertNumberOfCrashesInfo created successfully");
+  //   }
+  // );
+
+  
+////////////////// Procedure to update the number_of_crashes table
+// con.query(
+//   `CREATE PROCEDURE IF NOT EXISTS UpdateNumberOfCrashes()
+//   BEGIN
+//     INSERT INTO number_of_crashes (build_id, location, number_of_crashes)
+//     SELECT
+//       ds.build_id,
+//       loc.location,
+//       COUNT(ci.crash_id) as crash_count
+//     FROM device_surface_info ds
+//     LEFT JOIN crash_info ci ON ds.build_id = ci.build_id
+//     LEFT JOIN location loc ON ds.build_id = loc.build_id
+//     GROUP BY ds.build_id, loc.location
+//     ON DUPLICATE KEY UPDATE
+//       number_of_crashes = number_of_crashes + 1;
+//   END;`,
+//   (err, results) => {
+//     if (err) throw err;
+//     console.log("Procedure UpdateNumberOfCrashes created successfully");
+//   }
+// );

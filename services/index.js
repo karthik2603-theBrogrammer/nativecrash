@@ -75,7 +75,6 @@ con.connect(function (err) {
       build_id VARCHAR(255) NOT NULL,
       location VARCHAR(255) NOT NULL,
       number_of_crashes INT NOT NULL,
-      FOREIGN KEY (build_id) REFERENCES device_surface_info(build_id),
       PRIMARY KEY (build_id, location)
     )
   `,
@@ -425,6 +424,15 @@ app.listen(port, () => {
 //     "suburb": "Sample Suburb"
 //   }
 // }
+
+////////////////nested queries
+// SELECT
+//     ds.build_id,
+//     ds.device_name,
+//     (SELECT COUNT(DISTINCT l.crash_id) FROM location l WHERE l.build_id = ds.build_id) AS total_crashes
+// FROM
+//     device_surface_info ds;
+//////////////////////
 
 /////////////////////////////template for procedure
 // const createProcedureQuery = `

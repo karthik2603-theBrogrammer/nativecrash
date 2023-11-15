@@ -92,6 +92,11 @@ def insert_endpoint_data(data):
     # Close the cursor
     cursor.close()
 
+def call_procedure():
+    cursor = conn.cursor()
+    cursor.callproc("UpdateNumberOfCrashes", args=())
+    conn.commit()  # Ensure changes are committed
+    cursor.close()
 
 # Function to execute a nested query and retrieve the result
 def execute_nested_query():
@@ -199,7 +204,7 @@ st.title("DBMS proj")
 st.markdown(f"##### Made with ❤ by SRN: {SRN1}, {SRN2}")
 
 st.sidebar.header("Navigation")
-menu_option = st.sidebar.selectbox("Select an operation", ["Show Tables", "Trigger", "Show Join Tables", "Show Nested Query", "Manage User Privilege", "CRUD"])
+menu_option = st.sidebar.selectbox("Select an operation", ["Show Tables", "Trigger", "Procedure", "Show Join Tables", "Show Nested Query", "Manage User Privilege", "CRUD"])
 
 
 if menu_option == "Show Tables":
@@ -260,6 +265,21 @@ if menu_option == "Trigger":
             st.success("Data inserted into 'endpoint_data' successfully.")
     except json.JSONDecodeError:
         st.error("Invalid JSON data. Please enter valid JSON.")
+
+elif menu_option == "Procedure":
+    st.subheader("Call the procedure, UpdateNumberOfCrashes")
+
+    if st.button("Call Procedure"):
+        # Call the procedure
+        call_procedure()
+
+        # Display a success message or any other relevant information
+        st.subheader("Procedure Executed Successfully")
+        st.write("The UpdateNumberOfCrashes procedure has been executed.")
+        table_data = fetch_table_data("number_of_crashes")
+        st.subheader(f"Data for number_of_crashes Table")
+        st.dataframe(table_data)
+
 
 elif menu_option == "Show Join Tables":
     

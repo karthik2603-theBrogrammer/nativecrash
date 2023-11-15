@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import xml.etree.ElementTree as ET
 import mysql.connector
+import json
 
 SRN1 = "PES1UG21CS300"
 SRN2 = "PES1UG21CS269"
@@ -36,6 +37,61 @@ def execute_join_query():
     """
     data = pd.read_sql(query, conn)
     return data
+
+# Function to insert data into endpoint_data table
+def insert_endpoint_data(data):
+    cursor = conn.cursor()
+
+    # Extracting values from the provided JSON data
+    time = data["time"]
+    error_title = data["errorTitle"]
+    error_description = data["errorDescription"]
+    brand = data["brand"]
+    device_name = data["deviceName"]
+    is_device = data["isDevice"]
+    manufacturer = data["manufacturer"]
+    model_name = data["modelName"]
+    build_id = data["buildId"]
+    internal_build_id = data["internalBuildId"]
+    cpu_architectures = data["cpuArchitectures"]
+    total_memory = data["totalMemory"]
+    os_name = data["osName"]
+    os_version = data["osVersion"]
+    device_uptime = data["deviceUptime"]
+    latitude = data["coordinates"]["latitude"]
+    longitude = data["coordinates"]["longitude"]
+    suburb = data["locationData"]["suburb"]
+    city = data["locationData"]["city"]
+    state = data["locationData"]["state"]
+
+    # Concatenate suburb, city, and state into the location column
+    location = f"{suburb}, {city}, {state}"
+
+    # Build the INSERT INTO query for endpoint_data table
+    insert_query = """
+    INSERT INTO endpoint_data (
+        time, error_title, error_description, brand, device_name, is_device,
+        manufacturer, model_name, build_id, internal_build_id, cpu_architectures,
+        total_memory, os_name, os_version, device_uptime, latitude, longitude,
+        location
+    )
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+
+    # Execute the query
+    cursor.execute(insert_query, (
+        time, error_title, error_description, brand, device_name, is_device,
+        manufacturer, model_name, build_id, internal_build_id, cpu_architectures,
+        total_memory, os_name, os_version, device_uptime, latitude, longitude,
+        location
+    ))
+
+    # Commit the changes
+    conn.commit()
+
+    # Close the cursor
+    cursor.close()
+
 
 # Function to execute a nested query and retrieve the result
 def execute_nested_query():
@@ -143,7 +199,7 @@ st.title("DBMS proj")
 st.markdown(f"##### Made with ❤ by SRN: {SRN1}, {SRN2}")
 
 st.sidebar.header("Navigation")
-menu_option = st.sidebar.selectbox("Select an operation", ["Show Tables", "Show Join Tables", "Show Nested Query", "Manage User Privilege", "CRUD"])
+menu_option = st.sidebar.selectbox("Select an operation", ["Show Tables", "Trigger", "Show Join Tables", "Show Nested Query", "Manage User Privilege", "CRUD"])
 
 
 if menu_option == "Show Tables":
@@ -156,6 +212,54 @@ if menu_option == "Show Tables":
         table_data = fetch_table_data(selected_table)
         st.subheader(f"Data for {selected_table} Table")
         st.dataframe(table_data)
+
+if menu_option == "Trigger":
+    st.subheader("Insert Data into endpoint_data")
+
+    if st.button("Show Sample Values"):
+        sample_values = """{
+            "time": "2023-11-13T12:00:55",
+            "errorTitle": "Sample Error",
+            "errorDescription": "This is a sample error description.",
+            "brand": "SampleBrand",
+            "deviceName": "SampleDevice",
+            "isDevice": true,
+            "manufacturer": "SampleManufacturer",
+            "modelName": "SampleModel",
+            "buildId": "1234567890",
+            "internalBuildId": "987654321",
+            "cpuArchitectures": "x86_64",
+            "totalMemory": "8GB",
+            "osName": "SampleOS",
+            "osVersion": "1.0.0",
+            "deviceUptime": "4564564",
+            "coordinates": {
+                "latitude": "37.7749",
+                "longitude": "-122.4194"
+            },
+            "locationData": {
+                "city": "San Francisco",
+                "state": "California",
+                "suburb": "Sample Suburb"
+            }
+        }
+        """
+        st.text_area("Sample JSON Data (Copy paste this into the text_area & make sure TIME IS DIFFERENT for each insert)", value=sample_values, height=250)
+    # User input for JSON data
+    json_data = st.text_area("Enter JSON Data")
+
+    # Button to fill the text area with sample values
+
+    try:
+        # Parse the JSON data
+        data = json.loads(json_data)
+
+        # Button to insert data into endpoint_data table
+        if st.button("Insert Data into endpoint_data"):
+            insert_endpoint_data(data)
+            st.success("Data inserted into 'endpoint_data' successfully.")
+    except json.JSONDecodeError:
+        st.error("Invalid JSON data. Please enter valid JSON.")
 
 elif menu_option == "Show Join Tables":
     

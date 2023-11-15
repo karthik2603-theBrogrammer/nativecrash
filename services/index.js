@@ -2,6 +2,8 @@ const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const path = require("path");
+
 dotenv.config();
 const app = express();
 // Add the cors middleware
@@ -20,13 +22,15 @@ con.connect(function (err) {
   if (err) throw err;
   console.log("Connected!");
 
-  // Surface Level Info Table
+  // Create 'nativecrash' database if it doesn't exist
   con.query(`
   CREATE DATABASE IF NOT EXISTS nativecrash
   `);
+  // Use 'nativecrash' database
   con.query(`
   USE nativecrash
   `);
+   // Create 'device_surface_info' table for surface-level device information
   con.query(
     `
     CREATE TABLE IF NOT EXISTS device_surface_info (
@@ -48,7 +52,7 @@ con.connect(function (err) {
     }
   );
 
-  // Location Table
+  // Create 'location' table to store crash locations
   con.query(
     `
     CREATE TABLE IF NOT EXISTS location (
@@ -67,7 +71,7 @@ con.connect(function (err) {
     }
   );
 
-  // Number of Crashes Table
+  // Create 'number_of_crashes' table to store crash counts
   // This table is result of a trigger.
   con.query(
     `
@@ -84,7 +88,7 @@ con.connect(function (err) {
     }
   );
 
-  // Detailed Information Table
+ // Create 'device_detailed_info' table for detailed device information
   con.query(
     `
     CREATE TABLE IF NOT EXISTS device_detailed_info (
@@ -100,7 +104,7 @@ con.connect(function (err) {
     }
   );
 
-  // Crash Report Table
+  // Create 'crash_info' table to store crash reports
   con.query(
     `
     CREATE TABLE IF NOT EXISTS crash_info (
@@ -116,7 +120,7 @@ con.connect(function (err) {
     }
   );
 
-  //endpoint_data table
+  // Create 'endpoint_data' table to store endpoint data
   con.query(
     `
   CREATE TABLE IF NOT EXISTS endpoint_data (
@@ -147,7 +151,7 @@ con.connect(function (err) {
     }
   );
 
-  // Procedure to Insert into device_surface_info
+  // Create procedure to insert or update device_surface_info
   con.query(
     `CREATE PROCEDURE IF NOT EXISTS InsertDeviceSurfaceInfo(
       IN p_build_id VARCHAR(255),
@@ -189,7 +193,7 @@ con.connect(function (err) {
     }
   );
 
-  // Procedure to Insert into location
+  // Create procedure to insert crash location information
   con.query(
     `CREATE PROCEDURE IF NOT EXISTS InsertLocationInfo(
     IN p_crash_id INT,
@@ -212,7 +216,7 @@ con.connect(function (err) {
     }
   );
 
-  // Procedure to Insert into device_detailed_info
+  // Create procedure to insert or update device_detailed_info
   con.query(
     `CREATE PROCEDURE IF NOT EXISTS InsertDetailedInfo(
     IN p_build_id VARCHAR(255),
@@ -236,7 +240,7 @@ con.connect(function (err) {
     }
   );
 
-  // Procedure to Insert into crash_info
+  // Create procedure to insert crash report information
   con.query(
     `CREATE PROCEDURE IF NOT EXISTS InsertCrashReport(
     IN p_crash_id INT,
@@ -257,7 +261,7 @@ con.connect(function (err) {
       console.log("Procedure InsertCrashReport created successfully");
     }
   );
-
+// Create procedure to update the number_of_crashes table
 con.query(
   `CREATE PROCEDURE IF NOT EXISTS UpdateNumberOfCrashes()
   BEGIN
@@ -286,7 +290,7 @@ con.query(
   }
 );
 
-// trigger to handle procedure calls
+  // Create trigger to handle procedure calls after endpoint_data insertion
   const triggerQuery = `
 CREATE TRIGGER IF NOT EXISTS InsertYourEndpointData
 AFTER INSERT ON endpoint_data
@@ -320,10 +324,14 @@ CALL InsertDeviceSurfaceInfo(
     console.log("Trigger InsertYourEndpointData created successfully");
   });
 });
+// Express route to handle a basic GET request
 app.get("/", (req, res) => {
-  res.send("Hello World!");
+  const indexPath = path.join(__dirname, "public", "index.html");
+  res.sendFile(indexPath);
 });
 
+
+// Express route to handle a POST request for logging crashes
 app.post("/v2/log-crash", (req, res) => {
   try {
     const {

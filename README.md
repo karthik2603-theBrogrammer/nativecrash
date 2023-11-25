@@ -44,7 +44,26 @@ cd services
 npm install
 ```
 
-### Running
+### Setup Environment Variables 🔑
+1. Navigate to services and make a `.env` file. Set your MySQL password here.
+```
+touch .env
+```
+```
+PASSWORD = " "
+```
+2. Navigate to frontend and in `app.py` set your MySQL password in the SQL connector.
+For Example:
+```
+conn = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password=<SET_PASSWORD_HERE>,
+    database="nativecrash" #Use this only if the database 'nativecrash' is already present, else, run the index.js file first, then come to the streamlit file.
+)
+```
+
+### Running 🏃‍♂️
 1. 
 ```
 cd services

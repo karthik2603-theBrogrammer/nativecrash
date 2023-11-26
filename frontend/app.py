@@ -200,7 +200,7 @@ def revoke_privilege(user_id, privilege, table_name):
     cursor.close()
 
 
-st.title("DBMS proj")
+st.title("Mobile App Crash Management System")
 st.markdown(f"##### Made with ❤ by SRN: {SRN1}, {SRN2}")
 
 st.sidebar.header("Navigation")
